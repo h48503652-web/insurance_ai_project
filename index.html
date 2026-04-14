@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="he" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ביטוח ישיר - חיתום חכם</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; padding: 20px; max-width: 600px; margin: auto; }
+        .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        h2 { color: #e31e24; }
+        label { font-weight: bold; margin-top: 10px; display: block; }
+        input[type="text"], input[type="file"] { width: 100%; padding: 10px; margin-top: 5px; margin-bottom: 15px; border: 1px solid #ccc; border-radius: 5px; box-sizing: border-box; }
+        button { background-color: #e31e24; color: white; border: none; padding: 15px; width: 100%; border-radius: 5px; font-size: 16px; cursor: pointer; font-weight: bold; }
+        button:hover { background-color: #b3161b; }
+        #loading { display: none; text-align: center; margin-top: 15px; font-weight: bold; color: #555; }
+        #results { margin-top: 20px; padding: 15px; background: #eef; border-radius: 5px; display: none; }
+        .red-flag { color: red; font-weight: bold; }
+    </style>
+</head>
+<body>
+
+    <div class="card">
+        <h2>📷 צילום נכס - עוזר חיתום AI</h2>
+        <p>הזן את פרטי הלקוח והעלה תמונה לאימות.</p>
+
+        <label>מה הלקוח אמר בטלפון? (הצהרה)</label>
+        <input type="text" id="declaration" placeholder="לדוגמה: דירת 3 חדרים, ריצוף שיש..." value="דירת 3 חדרים, ריצוף קרמיקה">
+
+        <label>צלם או העלה תמונה של החדר:</label>
+        <input type="file" id="imageInput" accept="image/*" capture="environment">
+
+        <button onclick="analyzeImage()">שלח לניתוח AI 🚀</button>
+
+        <div id="loading">⏳ ה-AI מנתח את התמונה, אנא המתן...</div>
+
+        <div id="results">
+            <h3>📊 תוצאות הניתוח:</h3>
+            <p><strong>ריצוף:</strong> <span id="res-flooring"></span></p>
+            <p><strong>מזגן:</strong> <span id="res-ac"></span></p>
+            <p><strong>ציון יוקרה:</strong> <span id="res-luxury"></span> / 5</p>
+            <p><strong>פערים מההצהרה:</strong> <span id="res-discrepancies" class="red-flag"></span></p>
+            <p><strong>🚩 דגלים אדומים (סיכונים):</strong></p>
+            <ul id="res-flags" class="red-flag"></ul>
+        </div>
+    </div>
+
+    <script>
+        async function analyzeImage() {
+            const fileInput = document.getElementById('imageInput').files[0];
+            const declaration = document.getElementById('declaration').value;
+
+            if (!fileInput) {
+                alert("אנא בחר תמונה תחילה!");
+                return;
+            }
+
+            document.getElementById('loading').style.display = 'block';
+            document.getElementById('results').style.display = 'none';
+
+            const formData = new FormData();
+            formData.append("file", fileInput);
+            formData.append("declaration", declaration);
+
+            try {
+                const response = await fetch("http://localhost:8000/analyze", {
+                    method: "POST",
+                    body: formData
+                });
+                
+                const data = await response.json();
+                document.getElementById('loading').style.display = 'none';
+
+                if(data.status === "success") {
+                    const analysis = data.analysis;
+                    document.getElementById('res-flooring').innerText = analysis.flooring_type;
+                    document.getElementById('res-ac').innerText = analysis.ac_system;
+                    document.getElementById('res-luxury').innerText = analysis.luxury_score;
+                    
+                    document.getElementById('res-discrepancies').innerText = analysis.discrepancies.length > 0 ? analysis.discrepancies.join(", ") : "לא נמצאו פערים";
+                    
+                    const flagsList = document.getElementById('res-flags');
+                    flagsList.innerHTML = "";
+                    if(analysis.red_flags.length > 0) {
+                        analysis.red_flags.forEach(flag => {
+                            let li = document.createElement('li');
+                            li.innerText = flag;
+                            flagsList.appendChild(li);
+                        });
+                    } else {
+                        flagsList.innerHTML = "<li style='color:green;'>הכל תקין, אין סיכונים מיוחדים.</li>";
+                    }
+
+                    document.getElementById('results').style.display = 'block';
+                } else {
+                    alert("שגיאה בניתוח: " + data.message);
+                }
+            } catch (error) {
+                document.getElementById('loading').style.display = 'none';
+                alert("שגיאת תקשורת עם השרת. ודא שהשרת פועל ברקע.");
+            }
+        }
+    </script>
+</body>
+</html>
