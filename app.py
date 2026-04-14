@@ -86,7 +86,6 @@ st.title("🏢 מנוע חיתום AI: זיהוי סיכונים רב-תמונת
 
 
 # התחברות ל-API
-# client = genai.Client(api_key="AIzaSyCAMU7B-_9t86_XaFfIAkgoC-1Bg7vAr_Y")
 api_key = os.environ.get("GEMINI_API_KEY")
 client = genai.Client(api_key=api_key)
 
